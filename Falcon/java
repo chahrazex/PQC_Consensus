@@ -1,0 +1,44 @@
+import java.util.*;
+
+// Class representing a node in the network
+class Node {
+    private String publicKey; // Public key of the node
+    private String privateKey; // Private key of the node
+    private int vote; // Vote 
+
+    public Node(String publicKey, String privateKey) {
+        this.publicKey = publicKey;
+        this.privateKey = privateKey;
+    }
+
+    // Method to generate a random number
+    public void generateRandomNumber() {
+        Random rand = new Random();
+        this.vote = rand.nextInt();
+    }
+
+    // Method to get the vote value
+    public int getVote() {
+        return vote;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        // Creating nodes
+        Node node1 = new Node("publicKey1", "privateKey1");
+        Node node2 = new Node("publicKey2", "privateKey2");
+        Node node3 = new Node("publicKey3", "privateKey3");
+
+        List<Node> nodes = new ArrayList<>(Arrays.asList(node1, node2, node3));
+
+        // Performing delegation
+        int n = 2; // Number of nodes to be selected for delegation
+        for (Node node : nodes) 
+        {
+            node.generateRandomNumber();
+            System.out.println("Vote Node: " + node.getVote());
+        }
+        
+    }
+}

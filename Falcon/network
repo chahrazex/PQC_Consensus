@@ -1,0 +1,56 @@
+import random
+from collections import Counter
+import matplotlib.pyplot as plt
+
+# Class representing a node in the network
+class Node:
+    def __init__(self, public_key, private_key):
+        self.public_key = public_key  # Public key of the node
+        self.private_key = private_key  # Private key of the node
+        self.vote = None  # Vote
+        self.color = 'blue'  # Initial color
+
+    # Method to generate a random number
+    def generate_random_number(self):
+        self.vote = random.randint(0, 9)  # Generate a random number between 0 and 9 for simplicity
+
+    # Method to get the vote value
+    def get_vote(self):
+        return self.vote
+
+def main(num_nodes):
+    # Creating nodes
+    nodes = [Node(f"publicKey{i}", f"privateKey{i}") for i in range(1, num_nodes + 1)]
+
+    # Performing delegation
+    vote_counts = Counter()
+    for node in nodes:
+        node.generate_random_number()
+        vote = node.get_vote()
+        vote_counts[vote] += 1
+        print(f"Node {node.public_key} Vote:", node.get_vote())
+
+    # Finding the most occurring vote value
+    delegated_vote, max_count = vote_counts.most_common(1)[0]
+
+    # Delegating the node with the most occurring vote
+    delegated_node = None
+    for node in nodes:
+        if node.get_vote() == delegated_vote:
+            delegated_node = node
+            delegated_node.color = 'red'
+
+    # Displaying the delegated vote
+    print("Delegated Vote:", delegated_vote)
+
+    # Plotting the nodes
+    for node in nodes:
+        plt.scatter(node.get_vote(), 0, color=node.color, label=node.public_key)
+    plt.xlabel('Vote Value')
+    plt.title('Node Votes')
+    plt.legend()
+    plt.show()
+
+if __name__ == "__main__":
+    num_nodes = int(input("Enter the number of nodes: "))
+    main(num_nodes)

@@ -1,0 +1,72 @@
+import time
+import hashlib
+import random
+import base64
+
+class ConsensusProcess:
+    ROUND_TIME = 60  # in seconds
+
+    def __init__(self):
+        self.CONSENSUS_START_TIME = time.time()
+        self.monotonic_counter = self.get_monotonic_counter_from_tee()
+
+    def generate_block(self):
+        # Verify block integrity
+        if not self.verify_block_integrity():
+            return False
+
+        # Generate luck using TEE
+        luck = self.generate_luck()
+
+        # Generate proof in Remote Attestation process
+        proof = self.generate_proof(luck)
+
+        # Broadcast the block
+        self.broadcast_block(luck, proof)
+
+        return True
+
+    def verify_block_integrity(self):
+        # Check if round time has passed
+        if time.time() < self.CONSENSUS_START_TIME + self.ROUND_TIME:
+            return False
+
+        # Verify monotonic counter
+        current_monotonic_counter = self.get_monotonic_counter_from_tee()
+        if current_monotonic_counter != self.monotonic_counter:
+            return False
+
+        return True
+
+    def generate_luck(self):
+        # Generate luck using TEE
+        return random.randint(0, 2**32 - 1)
+
+    def generate_proof(self, luck):
+        # Generate proof by concatenating luck and nonce
+        nonce = self.calculate_nonce()
+        proof = str(luck) + nonce
+        return base64.b64encode(proof.encode()).decode()
+
+    def calculate_nonce(self):
+        # Calculate nonce from block header
+        # For demonstration purposes, let's assume the nonce is a hash of block header
+        block_header = "block_header_data"
+        return hashlib.sha256(block_header.encode()).hexdigest()
+
+    def broadcast_block(self, luck, proof):
+        # Broadcast the block to other delegated nodes
+        print("Block Broadcast - Luck:", luck, ", Proof:", proof)
+
+    def get_monotonic_counter_from_tee(self):
+        # Get monotonic counter from TEE
+        # For demonstration purposes, let's assume it returns a fixed value
+        return 12345
+
+if __name__ == "__main__":
+    consensus_process = ConsensusProcess()
+    block_generated = consensus_process.generate_block()
+    if block_generated:
+        print("Block generated successfully.")
+    else:
+        print("Failed to generate block. Block integrity verification failed.")
