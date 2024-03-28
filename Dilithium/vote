@@ -2,68 +2,141 @@ import random
 from collections import Counter
 from dilithium import Dilithium2
 import time
-
+from consensus1 import ConsensusProcess
+ 
 # Class representing a node in the network
 class Node:
     def __init__(self):
-        pk, sk = Dilithium2.keygen()
-        msg = b"Scalability: One potential challenge with the PQ-DPoL consensus algorithm is scalability. As mentioned in the document, the use of the Dilithium signature scheme may lead to a reduction in the number of Transactions Per Second (TPS) due to the large signature size. In a network like an energy internet, where a high volume of transactions may be processed, scalability is crucial. To address this, you may need to optimize the consensus algorithm or consider parallel processing techniques to improve scalability."
-        sig = Dilithium2.sign(sk, msg)
         
-         # Record start time
         start_time = time.time()
-        assert Dilithium2.verify(pk, msg, sig)
-         # Record end time
+        pk, sk = Dilithium2.keygen()
         end_time = time.time()
-        # Calculate and display execution time
+        self.private_key = sk # initialise l'attribut 
+        self.public_key = pk# //
+        self.vote = None  # Vote no one 
+        
         execution_time = end_time - start_time
-        print("Execution Time:", execution_time, "seconds")
-
-        self.private_key=sk
-        self.public_key=pk
-        # sig = Dilithium2.sign(private_key, b"hello")
-        # self.public_key = falcon.PublicKey(self.private_key)  # Public key of the node
-        self.vote = None  # Vote
-
+        print("Key Generation Time for node:", execution_time, "seconds")
+        
     # Method to generate a random number
-    def generate_random_number(self,n):
-        self.vote = random.randint(1, n)  # Generate a random number between 0 and n for simplicity
+    def generate_random_number(self, n):
+        self.vote = random.randint(1, n)  # Generate a random number between 1 and n
 
     # Method to get the vote value
     def get_vote(self):
         return self.vote
+
     # Method to get the key length
     def get_key_length(self):
         return len(bytes(self.private_key))
 
+    # Method to sign the vote
+    def sign_vote(self):
+       #(self.vote) est le vote généré par le nœud +(str(self.vote)) convertit le vote en une chaîne de caractères +
+       #(encode()) convertit cette chaîne de caractères en une séquence d'octets (bytes)
+       #  car la fonction Dilithium2.sign() nécessite un message sous forme d'octets
+        msg = str(self.vote).encode()
+        
+        start_time = time.time()
+        signature = Dilithium2.sign(self.private_key, msg)
+        end_time = time.time()
+        
+        execution_time = end_time - start_time
+        
+        print("Signature Generation Time for node:", execution_time, "seconds")
+        return signature
+
+    # Method to verify the vote
+    def verify_vote(self, signature):
+        msg = str(self.vote).encode()
+        
+        start_time = time.time()
+        result = Dilithium2.verify(self.public_key, msg, signature)
+        end_time = time.time()
+        
+        execution_time = end_time - start_time
+        
+        print("Signature Verification Time for node:", execution_time, "seconds")
+
+        return result
+
+
 def main(num_nodes):
-    
     # Creating nodes
-    nodes = [Node() for i in range(1, num_nodes + 1)]
+     #liste nodes qui contient num_nodes instances de la classe
+    consensus_process = ConsensusProcess()
 
-    
+    nodes = [Node() for _ in range(num_nodes)]
 
-    # Performing delegation
+    # Performing delegation 
+    # vote_counts ===un objet Counter pour compter les votes valides
     vote_counts = Counter()
+    #pour  stocker les transactions de vote pour chaque nœud
+    voting_transactions = {}
+
+    # Voting phase
     for node in nodes:
         node.generate_random_number(num_nodes)
         vote = node.get_vote()
-        vote_counts[vote] += 1
+        #signe le vote avec la clé privée du nœud et récupère la signature
+        signature = node.sign_vote()
+        #associer chaque vote à un nœud spécifique de manière unique a l aide de pk
+        voting_transactions[node.public_key] = {'vote': vote, 'signature': signature}
         print(node.get_vote())
-        print("Key Length:", node.get_key_length())
+        
+    # Verification phase 
+    #  utilisé pour compter les occurrences des votes valides== chaque vote validé== le vote est ajouté à valid_votes 
+    valid_votes = Counter()
+    # En utilisant la clé publique, le programme trouve le nœud correspondant dans la liste 
+    for public_key, transaction in voting_transactions.items():
+        #extrait la valeur (vote) associée à la clé vote
+        vote = transaction['vote']
+        #mem ch
+        signature = transaction['signature']
+
+        #None si aucun nœud ne correspond
+        # La fonction next() renvoie le premier élément de l'expression de compréhension de liste qui correspond à la condition donnée
+
+        #Stocke le nœud correspondant dans la variable node
+        node = next((n for n in nodes if n.public_key == public_key), None)
+        #Si la signature est valide== le vote est compté dans valid_votes
+        if node and node.verify_vote(signature):
+            valid_votes[vote] += 1
 
     # Finding the most occurring vote value
-    delegated_vote, max_count = vote_counts.most_common(1)[0]
-
-     
+    delegated_vote, max_count = valid_votes.most_common(1)[0]
 
     # Displaying the delegated vote
     print("Delegated Vote:", delegated_vote)
+    block_generated = consensus_process.generate_block(delegated_vote)
+    if block_generated:
+        print("Bloc généré avec succès.")
 
-    
+        # Exemple de vérification de bloc
+        block_data = {
+            'nonce': consensus_process.calculate_nonce(),
+            'luck': delegated_vote,
+            'proof': consensus_process.generate_proof(delegated_vote)
+        }
+        if consensus_process.verify_block(block_data, delegated_vote):
+            print("Bloc vérifié avec succès.")
+        else:
+            print("Échec de la vérification du bloc.")
+             # Exemple de vérification de transaction
+        transaction_data = consensus_process.generate_transaction()
+        #transaction_data2 = consensus_process2.generate_transaction()
+
+        signature = consensus_process.sign_transaction(transaction_data)
+        #signature2 = consensus_process2.sign_transaction(transaction_data)
+        if consensus_process.verify_transaction(transaction_data, signature):
+            print("Transaction 1 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 1.")
+    else:
+        print("Échec de la génération du bloc. La vérification de l'intégrité du bloc a échoué.")
+        
+
 
 if __name__ == "__main__":
     num_nodes = int(input("Enter the number of nodes: "))
     main(num_nodes)
-
-
