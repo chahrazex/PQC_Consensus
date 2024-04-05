@@ -7,7 +7,7 @@ from consensus1 import ConsensusProcess
 # Class representing a node in the network
 class Node:
     def __init__(self):
-        
+         
         start_time = time.time()
         pk, sk = Dilithium2.keygen()
         end_time = time.time()
