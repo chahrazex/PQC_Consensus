@@ -1,0 +1,313 @@
+import random
+from collections import Counter
+import falcon
+import time
+from consensus import ConsensusProcess
+
+class Node:
+    def __init__(self):
+        start_time = time.time()
+        sk = falcon.SecretKey(512)  # Private key of the node
+        pk = falcon.PublicKey(sk)
+        end_time = time.time()
+        self.private_key = sk  # initialise l'attribut 
+        self.public_key = pk  # //
+
+        execution_time = end_time - start_time
+        print("Key Generation Time for node:", execution_time, "seconds")
+
+    def generate_random_number(self, n):
+        self.vote = random.randint(1, n)
+
+    def get_vote(self):
+        return self.vote
+
+    def get_key_length(self):
+     key_data = self.private_key.sig_bytelen
+     return key_data
+
+
+
+
+    def sign_vote(self):
+        msg = str(self.vote).encode()
+        sk = falcon.SecretKey(512)  # Private key of the node
+        pk = falcon.PublicKey(sk)
+        self.private_key = sk  # initialise l'attribut 
+        self.public_key = pk
+        start_time = time.time()
+        signature = self.private_key.sign(msg)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+        signature_size = len(signature)
+
+        print("Signature Generation Time for node:", execution_time, "seconds")
+        print("Size of the Signature:", signature_size, "bytes")
+
+        return signature
+
+    def verify_vote(self, signature):
+        msg = str(self.vote).encode()
+
+        start_time = time.time()
+        result = self.public_key.verify(msg, signature)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+
+        print("Signature Verification Time for node:", execution_time, "seconds")
+
+        return result, execution_time
+
+def main(num_nodes):
+    block_Items_Size=80#version +previous block header hash - 32 bytes+nonce .....
+    Block_size=25000-80# 4 traqction
+    transaction_size=1621 
+
+    T= 15 #Block_size/ transaction_size
+   
+     #previous tx out hash - 32 byte+previous tx out position - 4 bytes+sequence - 4 bytes
+    tx_champs=897  + 666 +32 +4 +4
+
+    consensus_process = ConsensusProcess()
+     #  Creating nodes
+     #liste nodes qui contient num_nodes instances de la classe
+    nodes = [Node() for _ in range(num_nodes)]
+# vote_counts ===un objet Counter pour compter les votes valides
+    vote_counts = Counter()
+    # vote_counts ===un objet Counter pour compter les votes valides
+    voting_transactions = {}
+
+    #start_block_time = time.time()
+
+    start_Delegation_Latency = time.time()
+    start_delegation_time = time.time()
+        # Voting phase
+    for node in nodes:
+        node.generate_random_number(num_nodes)
+        vote = node.get_vote()
+        print('vote', node.get_vote())
+        print("Key Length:", node.get_key_length())
+#signe le vote avec la clé privée du nœud et récupère la signature
+        signature = node.sign_vote()
+        #associer chaque vote à un nœud spécifique de manière unique a l aide de pk
+        voting_transactions[node.public_key] = {'vote': vote, 'signature': signature}
+    end_delegation_time = time.time()
+    # Verification phase 
+    #  utilisé pour compter les occurrences 
+    # des votes valides== chaque vote validé== le vote est ajouté à valid_votes
+    valid_votes = Counter()
+    total_execution_time = 0.0
+ # En utilisant la clé publique, le programme trouve le nœud correspondant dans la liste 
+    for public_key, transaction in voting_transactions.items():
+         #extrait la valeur (vote) associée à la clé vote
+        vote = transaction['vote']
+         #mem ch
+        signature = transaction['signature']
+
+         #None si aucun nœud ne correspond
+         #La fonction next() renvoie le premier élément de l'expression de compréhension de liste qui correspond à la condition donnée
+
+        #Stocke le nœud correspondant dans la variable node
+        node = next((n for n in nodes if n.public_key == public_key), None)
+        #Si la signature est valide== le vote est compté dans valid_votes
+        if node:
+            result, execution_time = node.verify_vote(signature)
+            if result:
+                valid_votes[vote] += 1
+                total_execution_time += execution_time
+    
+    end_Delegation_Latency = time.time()
+    Delegation_Latency =  end_Delegation_Latency-start_Delegation_Latency
+
+    total_delegation_time = end_delegation_time -start_delegation_time + (total_execution_time)
+    tx=num_nodes
+    tpsd = tx / total_delegation_time
+
+    print(f"TPSD (Transactions Per Second during Delegation): {tpsd}")
+    print(f"LD (Delegation_Latency): {Delegation_Latency}")
+
+    average_execution_time = total_execution_time / num_nodes
+    print('Average Signature Verification Time for all nodes:', average_execution_time)
+
+    delegated_vote, _ = valid_votes.most_common(1)[0]
+    print("Delegated Vote:", delegated_vote)
+
+#genere tran+sin
+
+    start_consensus_Latency = time.time()
+    sk1 = falcon.SecretKey(512)  # Private key of the node
+    pk1 = falcon.PublicKey(sk1)
+   
+   
+    transaction_data1 = consensus_process.generate_transaction("sender1", "receiver1", 50)
+    transaction_data2 = consensus_process.generate_transaction("sender2", "receiver2", 100)
+    transaction_data3 = consensus_process.generate_transaction("sender3", "receiver3", 150)
+    transaction_data4 = consensus_process.generate_transaction("sender4", "receiver4", 70)
+    transaction_data5 = consensus_process.generate_transaction("sender5", "receiver5", 40)
+    transaction_data6 = consensus_process.generate_transaction("sender6", "receiver6", 70)
+    transaction_data7 = consensus_process.generate_transaction("sender7", "receiver7", 50)
+    transaction_data8 = consensus_process.generate_transaction("sender8", "receiver8", 100)
+    transaction_data9 = consensus_process.generate_transaction("sender9", "receiver9", 150)
+    transaction_data10 = consensus_process.generate_transaction("sender10", "receiver10", 70)
+    transaction_data11= consensus_process.generate_transaction("sender11", "receiver11", 40)
+    transaction_data12= consensus_process.generate_transaction("sender12", "receiver12", 70)
+    transaction_data13 = consensus_process.generate_transaction("sender13", "receiver13", 70)
+    transaction_data14= consensus_process.generate_transaction("sender14", "receiver14", 40)
+    transaction_data15= consensus_process.generate_transaction("sender15", "receiver15", 70)
+
+    signature1 = consensus_process.sign_transaction(transaction_data1, sk1)
+    signature2 = consensus_process.sign_transaction(transaction_data2, sk1)
+    signature3 = consensus_process.sign_transaction(transaction_data3, sk1)
+    signature4 = consensus_process.sign_transaction(transaction_data4, sk1)
+    signature5 = consensus_process.sign_transaction(transaction_data5, sk1)
+    signature6 = consensus_process.sign_transaction(transaction_data6, sk1)
+    signature7 = consensus_process.sign_transaction(transaction_data7, sk1)
+    signature8 = consensus_process.sign_transaction(transaction_data8, sk1)
+    signature9 = consensus_process.sign_transaction(transaction_data9, sk1)
+    signature10 = consensus_process.sign_transaction(transaction_data10, sk1)
+    signature11 = consensus_process.sign_transaction(transaction_data11, sk1)
+    signature12 = consensus_process.sign_transaction(transaction_data12, sk1)
+    signature13 = consensus_process.sign_transaction(transaction_data13, sk1)
+    signature14 = consensus_process.sign_transaction(transaction_data14, sk1)
+    signature15 = consensus_process.sign_transaction(transaction_data15, sk1)
+
+
+    end_block_time = time.time()
+
+    block_generated = consensus_process.generate_block(delegated_vote)
+
+    if block_generated:
+        print("Bloc généré avec succès.")
+        # Exemple de vérification de bloc
+        #luck = consensus_process.calculate_nonce(delegated_vote)  # Génération de la chance
+        block_data = {
+            'nonce': consensus_process.calculate_nonce(),
+            'luck': delegated_vote,
+            'proof': consensus_process.generate_proof(delegated_vote)  # Génération de la preuve
+        }
+
+        if consensus_process.verify_block(block_data, delegated_vote):
+            
+            print("Bloc vérifié avec succès.")   
+            end_consensus_Latency = time.time()
+            LC=    (end_consensus_Latency -    start_consensus_Latency )*(num_nodes*0.75)
+            print(f"LCC: {LC} in socond") 
+        else:
+            print("Échec de la vérification du bloc.")
+        
+        
+
+        size_with_sin1 = consensus_process.get_transaction_size(transaction_data1) + tx_champs
+        size_with_sin2 = consensus_process.get_transaction_size(transaction_data2) + tx_champs
+        size_with_sin3 = consensus_process.get_transaction_size(transaction_data3) + tx_champs
+        size_with_sin4 = consensus_process.get_transaction_size(transaction_data4) + tx_champs
+        size_with_sin5 = consensus_process.get_transaction_size(transaction_data5) + tx_champs
+        size_with_sin6 = consensus_process.get_transaction_size(transaction_data6) + tx_champs
+        size_with_sin7 = consensus_process.get_transaction_size(transaction_data7) + tx_champs
+        size_with_sin8 = consensus_process.get_transaction_size(transaction_data8) + tx_champs
+        size_with_sin9 = consensus_process.get_transaction_size(transaction_data9) + tx_champs
+        size_with_sin10 = consensus_process.get_transaction_size(transaction_data10) + tx_champs
+        size_with_sin11  = consensus_process.get_transaction_size(transaction_data11) + tx_champs
+        size_with_sin12 = consensus_process.get_transaction_size(transaction_data12) + tx_champs
+        size_with_sin13  = consensus_process.get_transaction_size(transaction_data13) + tx_champs
+        size_with_sin14 = consensus_process.get_transaction_size(transaction_data14) + tx_champs
+        size_with_sin15 = consensus_process.get_transaction_size(transaction_data15) + tx_champs
+
+      #  total_size_with_sin = size_with_sin1 + size_with_sin2 + size_with_sin3 + size_with_sin4+size_with_sin5+size_with_sin6
+
+        print(f"Transaction 1 size: {size_with_sin1} bytes")
+        print(f"Transaction 2 size: {size_with_sin2} bytes")
+        print(f"Transaction 3 size: {size_with_sin3} bytes")
+        print(f"Transaction 4 size: {size_with_sin4} bytes")
+        print(f"Transaction 5 size: {size_with_sin5} bytes")
+        print(f"Transaction 6 size: {size_with_sin6} bytes")
+      #  print(f"Total size with sin: {total_size_with_sin} bytes")
+
+        if consensus_process.verify_transaction(transaction_data1, signature1, pk1):
+            print("Transaction 1 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 1.")
+
+        if consensus_process.verify_transaction(transaction_data2, signature2, pk1):
+            print("Transaction 2 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 2.")
+
+        if consensus_process.verify_transaction(transaction_data3, signature3, pk1):
+            print("Transaction 3 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 3.")
+
+        if consensus_process.verify_transaction(transaction_data4, signature4, pk1):
+            print("Transaction 4 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 4.")
+
+        if consensus_process.verify_transaction(transaction_data5, signature5, pk1):
+            print("Transaction 5 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 5.")
+
+        if consensus_process.verify_transaction(transaction_data6, signature6, pk1):
+            print("Transaction 6 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 6.")
+
+        if consensus_process.verify_transaction(transaction_data7, signature7, pk1):
+            print("Transaction 7 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 7.")
+
+        if consensus_process.verify_transaction(transaction_data8, signature8, pk1):
+            print("Transaction 8 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 8.")
+
+        if consensus_process.verify_transaction(transaction_data9, signature9, pk1):
+            print("Transaction 9 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 9.")
+
+        if consensus_process.verify_transaction(transaction_data10, signature10, pk1):
+            print("Transaction 10 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 10.")
+
+        if consensus_process.verify_transaction(transaction_data11, signature11, pk1):
+            print("Transaction 11vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 11.")
+
+        if consensus_process.verify_transaction(transaction_data12, signature12, pk1):
+            print("Transaction 12 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 12.")
+
+        if consensus_process.verify_transaction(transaction_data13, signature13, pk1):
+            print("Transaction 13 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 13.")
+
+        if consensus_process.verify_transaction(transaction_data14, signature14, pk1):
+            print("Transaction 14 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 14.")
+
+        start_verify_transaction_time = time.time()
+        if consensus_process.verify_transaction(transaction_data15, signature15, pk1):
+            print("Transaction 15 vérifiée avec succès.")
+            end_verify_transaction_time = time.time()
+            time_transaction= end_verify_transaction_time-start_verify_transaction_time
+            tpsC= T/ (time_transaction*num_nodes*0.75 )
+            print(f"TpsC: {tpsC} in socond")
+            
+        else:
+            print("Échec de la vérification de la transaction 15.")    
+    else:
+        print("Échec de la génération du bloc. La vérification de l'intégrité du bloc a échoué.")
+
+if __name__ == "__main__":
+    num_nodes = int(input("Enter the number of nodes: "))
+    main(num_nodes)

@@ -26,6 +26,9 @@ class Node:
 
     def sign_vote(self):
         msg = str(self.vote).encode()
+        pk, sk = Dilithium2.keygen()
+        self.private_key = sk
+        self.public_key = pk
 
         start_time = time.time()
         signature = Dilithium2.sign(self.private_key, msg)
@@ -53,9 +56,13 @@ class Node:
         return result, execution_time
 
 def main(num_nodes):
-    Block_size=25000# 4 traqction
-    transaction_size=20250#5062 bytes+ 2420 b
-    T= Block_size/ transaction_size
+    block_Items_Size=80#version +previous block header hash - 32 bytes+nonce .....
+    Block_size=25000-80# 4 traqction
+    transaction_size=3790 
+    T= 6 #nomnre de trans=Block_size/ transaction_size
+   
+     #previous tx out hash - 32 byte+previous tx out position - 4 bytes+sequence - 4 bytes
+    tx_champs=1312  + 2420+32 +4 +4
 
     consensus_process = ConsensusProcess()
      #  Creating nodes
@@ -110,7 +117,7 @@ def main(num_nodes):
 
     total_delegation_time = end_delegation_time -start_delegation_time + (total_execution_time)
     tx=num_nodes
-    tpsd = tx / total_delegation_time
+    tpsd = tx / total_delegation_time #how many nbr tx_vote in 1 second
 
     print(f"TPSD (Transactions Per Second during Delegation): {tpsd}")
     print(f"LD (Delegation_Latency): {Delegation_Latency}")
@@ -131,11 +138,16 @@ def main(num_nodes):
     transaction_data2 = consensus_process.generate_transaction("sender2", "receiver2", 100)
     transaction_data3 = consensus_process.generate_transaction("sender3", "receiver3", 150)
     transaction_data4 = consensus_process.generate_transaction("sender4", "receiver4", 70)
+    transaction_data5 = consensus_process.generate_transaction("sender5", "receiver5", 40)
+    transaction_data6 = consensus_process.generate_transaction("sender6", "receiver6", 70)
 
     signature1 = consensus_process.sign_transaction(transaction_data1, sk1)
     signature2 = consensus_process.sign_transaction(transaction_data2, sk1)
     signature3 = consensus_process.sign_transaction(transaction_data3, sk1)
     signature4 = consensus_process.sign_transaction(transaction_data4, sk1)
+    signature5 = consensus_process.sign_transaction(transaction_data5, sk1)
+    signature6 = consensus_process.sign_transaction(transaction_data6, sk1)
+
     end_block_time = time.time()
 
     block_generated = consensus_process.generate_block(delegated_vote)
@@ -161,17 +173,21 @@ def main(num_nodes):
         
         
 
-        size_with_sin1 = consensus_process.get_transaction_size(transaction_data1) + (1312 * 2) + 2420
-        size_with_sin2 = consensus_process.get_transaction_size(transaction_data2) + (1312 * 2) + 2420
-        size_with_sin3 = consensus_process.get_transaction_size(transaction_data3) + (1312 * 2) + 2420
-        size_with_sin4 = consensus_process.get_transaction_size(transaction_data4) + (1312 * 2) + 2420
+        size_with_sin1 = consensus_process.get_transaction_size(transaction_data1) + tx_champs
+        size_with_sin2 = consensus_process.get_transaction_size(transaction_data2) + tx_champs
+        size_with_sin3 = consensus_process.get_transaction_size(transaction_data3) + tx_champs
+        size_with_sin4 = consensus_process.get_transaction_size(transaction_data4) + tx_champs
+        size_with_sin5 = consensus_process.get_transaction_size(transaction_data5) + tx_champs
+        size_with_sin6 = consensus_process.get_transaction_size(transaction_data6) + tx_champs
 
-        total_size_with_sin = size_with_sin1 + size_with_sin2 + size_with_sin3 + size_with_sin4
+        total_size_with_sin = size_with_sin1 + size_with_sin2 + size_with_sin3 + size_with_sin4+size_with_sin5+size_with_sin6
 
         print(f"Transaction 1 size: {size_with_sin1} bytes")
         print(f"Transaction 2 size: {size_with_sin2} bytes")
         print(f"Transaction 3 size: {size_with_sin3} bytes")
         print(f"Transaction 4 size: {size_with_sin4} bytes")
+        print(f"Transaction 5 size: {size_with_sin5} bytes")
+        print(f"Transaction 6 size: {size_with_sin6} bytes")
         print(f"Total size with sin: {total_size_with_sin} bytes")
 
         if consensus_process.verify_transaction(transaction_data1, signature1, pk1):
@@ -189,9 +205,19 @@ def main(num_nodes):
         else:
             print("Échec de la vérification de la transaction 3.")
 
-        start_verify_transaction_time = time.time()
         if consensus_process.verify_transaction(transaction_data4, signature4, pk1):
             print("Transaction 4 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 4.")
+
+        if consensus_process.verify_transaction(transaction_data5, signature5, pk1):
+            print("Transaction 5 vérifiée avec succès.")
+        else:
+            print("Échec de la vérification de la transaction 5.")
+
+        start_verify_transaction_time = time.time()
+        if consensus_process.verify_transaction(transaction_data6, signature6, pk1):
+            print("Transaction 6 vérifiée avec succès.")
             end_verify_transaction_time = time.time()
             time_transaction= end_verify_transaction_time-start_verify_transaction_time
             tpsC= T/ (time_transaction*num_nodes*0.75 )

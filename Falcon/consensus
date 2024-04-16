@@ -2,71 +2,105 @@ import time
 import hashlib
 import random
 import base64
+import falcon
+from collections import Counter
+
 
 class ConsensusProcess:
-    ROUND_TIME = 60  # in seconds
+    ROUND_TIME = 60
 
     def __init__(self):
         self.CONSENSUS_START_TIME = time.time()
         self.monotonic_counter = self.get_monotonic_counter_from_tee()
+        sk = falcon.SecretKey(256)  # Private key of the node
+        pk = falcon.PublicKey(sk)
+        self.private_key = sk  # initialise l'attribut 
+        self.public_key = pk  # //
 
-    def generate_block(self):
-        # Verify block integrity
-        if not self.verify_block_integrity():
+    def generate_block(self, delegated_vote):
+        if not self.verify_block_integrity(delegated_vote):
             return False
 
-        # Generate luck using TEE
-        luck = self.generate_luck()
-
-        # Generate proof in Remote Attestation process
+        luck = delegated_vote
         proof = self.generate_proof(luck)
 
-        # Broadcast the block
         self.broadcast_block(luck, proof)
 
         return True
 
-    def verify_block_integrity(self):
-        # Check if round time has passed
-        if time.time() < self.CONSENSUS_START_TIME + self.ROUND_TIME:
+    def verify_block_integrity(self, delegated_vote):
+        if time.time() > self.CONSENSUS_START_TIME + self.ROUND_TIME:
+            print("Le temps du cycle de consensus est écoulé.")
             return False
 
-        # Verify monotonic counter
         current_monotonic_counter = self.get_monotonic_counter_from_tee()
         if current_monotonic_counter != self.monotonic_counter:
+            print("La vérification du compteur monotone a échoué.")
             return False
 
         return True
 
-    def generate_luck(self):
-        # Generate luck using TEE
-        return random.randint(0, 2**32 - 1)
-
     def generate_proof(self, luck):
-        # Generate proof by concatenating luck and nonce
         nonce = self.calculate_nonce()
         proof = str(luck) + nonce
-        return base64.b64encode(proof.encode()).decode()
+        proof_encoded = base64.b64encode(proof.encode()).decode()
+        print("Preuve générée avec succès.")
+        return proof_encoded
 
     def calculate_nonce(self):
-        # Calculate nonce from block header
-        # For demonstration purposes, let's assume the nonce is a hash of block header
         block_header = "block_header_data"
-        return hashlib.sha256(block_header.encode()).hexdigest()
+        nonce = hashlib.sha256(block_header.encode()).hexdigest()
+        print("Nonce calculé avec succès.")
+        return nonce
 
     def broadcast_block(self, luck, proof):
-        # Broadcast the block to other delegated nodes
-        print("Block Broadcast - Luck:", luck, ", Proof:", proof)
+        print(f"Diffusion du bloc - Chance (luck): {luck}, Preuve: {proof}")
 
     def get_monotonic_counter_from_tee(self):
-        # Get monotonic counter from TEE
-        # For demonstration purposes, let's assume it returns a fixed value
-        return 12345
+        monotonic_counter = 12345
+        print("Compteur monotone récupéré avec succès.")
+        return monotonic_counter
 
-if __name__ == "__main__":
-    consensus_process = ConsensusProcess()
-    block_generated = consensus_process.generate_block()
-    if block_generated:
-        print("Block generated successfully.")
-    else:
-        print("Failed to generate block. Block integrity verification failed.")
+    def verify_block(self, block_data, delegated_vote):
+        nonce = self.calculate_nonce()
+        if nonce != block_data['nonce']:
+            return False
+
+        proof = block_data['proof']
+        luck = block_data['luck']
+
+        proof_expected = str(luck) + nonce
+        proof_expected_encoded = base64.b64encode(proof_expected.encode()).decode()
+        if proof != proof_expected_encoded:
+            return False
+
+        return True
+
+    def generate_transaction(self, sender, receiver, amount):
+        transaction = {
+            'sender': sender,
+            'receiver': receiver,
+            'amount': amount
+        }
+        print("Transaction générée avec succès.")
+        return transaction
+
+    def sign_transaction(self, transaction_data, sk):
+        T = str(transaction_data).encode()
+        signature = self.private_key.sign(T)
+        print("Transaction signée avec succès.")
+        return signature
+
+    def get_transaction_size(self, transaction_data):
+        sender = transaction_data['sender']
+        receiver = transaction_data['receiver']
+        amount = str(transaction_data['amount'])
+        transaction_data_string = f"{sender}{receiver}{amount}"
+        return len(transaction_data_string.encode())
+
+    def verify_transaction(self, transaction_data, signature, pk):
+        T = str(transaction_data).encode()
+        
+        result = self.public_key.verify(T, signature)
+        return result
+
